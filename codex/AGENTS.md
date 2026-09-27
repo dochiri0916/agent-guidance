@@ -61,6 +61,52 @@ Task
 - 주석은 코드만으로 의도가 명확하지 않을 때만 추가한다.
 - 자명한 코드를 설명하는 주석을 추가하지 않는다.
 
+## Java / Spring Build Convention
+
+다음 조건 중 하나에 해당하는 Java/Spring 작업에는 Build Convention을 코드 작성 단계부터 적용한다.
+
+- 프로젝트가 `io.github.dochiri0916.build-convention`을 사용한다.
+- 사용자가 Build Convention 또는 개인 Java/Spring convention 적용을 명시했다.
+
+저장소의 더 구체적인 `AGENTS.md`, 프로젝트 문서, 기존 구조와 충돌하면 해당 저장소의 규칙을 우선한다. 특히 기존 회사 프로젝트에 개인 convention을 이유로 요청 범위 밖 구조 개편이나 일괄 마이그레이션을 하지 않는다.
+
+핵심 규칙:
+
+- 구조는 `Domain <- Application <- Adapter`를 따른다.
+- Domain은 Spring, JPA, Lombok, Application, Adapter에 의존하지 않는다.
+- Entity와 Aggregate Root는 불변 `final class`를 기본으로 한다.
+- Value Object와 First-class Collection은 `record`를 기본으로 한다.
+- Domain 식별자는 `{Domain}Id` Value Object로 표현하고 DB 기술 키를 Domain에 노출하지 않는다.
+- 신규 Aggregate는 `create`, 영속 상태 복원은 `restore`를 사용한다.
+- Aggregate 상태 변경은 기존 인스턴스를 직접 변경하지 않고 새 Aggregate를 반환한다.
+- 다른 Aggregate는 객체가 아니라 식별자 VO로 참조한다.
+- Application Service는 `final`이며 정확히 하나의 Inbound UseCase를 구현한다.
+- Application Service public method에는 `@Transactional`을 사용하고 조회는 `@Transactional(readOnly = true)`를 사용한다.
+- Application Service는 Outbound Port 또는 무상태 Domain Service만 주입받는다.
+- Controller는 Application Service 구현체가 아니라 Inbound UseCase에 의존한다.
+- Repository Port는 생성과 변경을 `create`, `update`로 구분하며 `save`, `upsert`를 사용하지 않는다.
+- UseCase Command/Query/Result는 `application.port.in`에 둔다.
+- HTTP Request/Response DTO는 `adapter.in.web`에 둔다.
+- JPA Entity는 `adapter.out.persistence`에만 두고 Domain 모델과 분리한다.
+- JPA Entity 간 객체 연관관계로 Aggregate를 탐색하지 않는다.
+- Domain/Application/Outbound Port는 DB, HTTP, SDK, Spring 기술 예외를 노출하지 않는다.
+- 테스트는 한국어 `@DisplayName`과 `// given`, `// when`, `// then` 구조를 사용한다.
+- 테스트에는 observable assertion이 있어야 한다.
+- 검증 실패를 해결하기 위해 test, lint, architecture, coverage, mutation rule을 비활성화하거나 exclusion을 추가하지 않는다.
+
+코드를 작성하기 전에 관련 패키지와 주변 구현을 확인하고 기존 구조와 naming을 따른다.
+
+세부 convention이 필요한 경우 Build Convention의 다음 문서를 기준으로 확인한다.
+
+- `docs/AGENTS_GUIDANCE.md`
+- `docs/ARCHITECTURE.md`
+- `docs/ERROR_HANDLING.md`
+- `docs/TESTING.md`
+
+위 문서가 현재 작업 저장소에 존재하지 않는 경우 임의로 경로를 추측하지 않는다. 이미 사용 가능한 Build Convention 기준 저장소가 있을 때만 해당 문서를 참고한다.
+
+최종적으로 deterministic validation 결과를 source of truth로 취급한다.
+
 ## Tests
 
 기존 테스트는 현재 동작과 명세를 검증하는 계약으로 취급한다.
